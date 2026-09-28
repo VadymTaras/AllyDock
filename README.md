@@ -1,5 +1,13 @@
 # ROG Ally Bazzite OS Configuration & Backup Repository
 
+> [!IMPORTANT]
+> **Personal Setup & No Support Disclaimer**
+>
+> This repository is maintained strictly for personal backup and tailored specifically to the author's individual hardware setup (ASUS ROG Ally running Bazzite OS).
+> - **No support, updates, or maintenance are guaranteed.** Issues and pull requests are not monitored or serviced.
+> - Provided **"AS-IS"** without warranties or guarantees of any kind.
+> - Feel free to inspect, fork, or adapt these scripts for your own needs at your own risk.
+
 Autonomous configuration repository for ASUS ROG Ally running **Bazzite OS**. This repo contains all custom-tuned scripts, systemd units, udev rules, HHD states, and Steam Input Desktop Layout patches (including left-stick smooth scrolling with Turbo and enhanced right-stick precision).
 
 ## Contents (`rog-ally-bazzite-config/`)
