@@ -1,285 +1,280 @@
-# ⚓ AllyDock (v1.1.0)
-### Autonomous Docking, Intelligent Display Detection & 3-Tier Adaptive Optimization Suite for ASUS ROG Ally on Bazzite OS
+# ⚓ AllyDock (v1.1.0) - Autonomous Docking & System Optimization Suite for ASUS ROG Ally on Bazzite OS
+### Intelligent Display Detection, 3-Tier Adaptive Profiling & Seamless Docked Gaming Suite
 
 [![Project](https://img.shields.io/badge/Project-AllyDock-orange.svg)](#)
 [![Version](https://img.shields.io/badge/Version-v1.1.0-blue.svg)](VERSION)
 [![OS](https://img.shields.io/badge/OS-Bazzite%2043%20%7C%2044-purple.svg)](https://bazzite.gg)
 [![Hardware](https://img.shields.io/badge/Hardware-ASUS%20ROG%20Ally%20(RC71L)-red.svg)](https://rog.asus.com/gaming-handhelds/rog-ally/rog-ally-2023/)
 [![Kernel](https://img.shields.io/badge/Kernel-Linux%206.17.x%20(fsync)-green.svg)](https://kernel.org)
-[![Status](https://img.shields.io/badge/Status-Tested%20%26%20Verified-success.svg)](#таблиця-протестованого-середовища-та-сумісності)
+[![Status](https://img.shields.io/badge/Status-Tested%20%26%20Verified-success.svg)](#-tested-environment--compatibility-matrix)
 [![Desktop](https://img.shields.io/badge/Desktop-KDE%20Plasma%206%20(Wayland)-informational.svg)](https://kde.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > [!IMPORTANT]
-> **Автономний комплекс стикування та оптимізацій AllyDock v1.1.0**  
-> Репозиторій **AllyDock** містить вивірений комплекс скриптів автоматизації, udev-правил, системних служб `systemd`, хуків виходу зі сну, профілю Handheld Daemon (`hhd`), налаштувань Steam Input Desktop Layout та **інтелектуального детектора дисплеїв з 3-рівневим адаптивним профілюванням (Handheld 45 FPS vs 60Hz TV vs AMD FreeSync/VRR Uncapped)** для портативної ігрової консолі **ASUS ROG Ally (RC71L)** під керуванням операційної системи **Bazzite OS**.
-> Пакет **AllyDock** протестовано у бойових умовах: він розпізнає параметри підключеного дисплея через бінарний EDID та DRM, автоматично підбирає оптимальний TDP та ліміт кадрів, усуває баги петлі геймпада (flapping loop), керує PipeWire аудіо та робить десктопний режим стіків ергономічним.
+> **AllyDock v1.1.0 Autonomous Docking & Optimization Suite**  
+> **AllyDock** is a comprehensive, production-tested suite of automation scripts, udev rules, `systemd` system services, sleep/wake hooks, Handheld Daemon (`hhd`) state profiles, tuned Steam Input Desktop Layout configurations, and an **intelligent display detector with 3-tier adaptive profiling (Handheld 45 FPS vs. 60Hz TV vs. AMD FreeSync/VRR Uncapped)** engineered specifically for the **ASUS ROG Ally (RC71L)** running **Bazzite OS**.  
+> The suite has been extensively battle-tested under real-world gaming conditions: it dynamically inspects connected displays via raw binary EDID and DRM sysfs interfaces, automatically selects optimal TDP and frame rate caps, resolves gamepad flapping loops, routes PipeWire audio seamlessly, and turns desktop joystick navigation into an ergonomic, responsive trackpad and turbo scroller.
 
 > [!NOTE]
 > **Personal Backup & Disclaimer**  
-> Репозиторій створено для резервного копіювання та автоматизованого розгортання конфігураційного сетапу автора на базі ASUS ROG Ally (RC71L) та Bazzite OS. Код надається «AS-IS» без гарантій та офіційної підтримки. Ви можете вільно форкати, модифікувати та адаптувати ці скрипти під власні потреби.
+> This repository is maintained for personal backup and automated deployment of the author's ASUS ROG Ally (RC71L) setup running Bazzite OS. The code is provided "AS-IS", without warranties or official support. You are warmly welcome to fork, modify, and adapt these scripts to suit your own handheld configurations.
 
 ---
 
-## 🏷️ Теги та ключові слова (SEO / Discoverability)
+## 🏷️ Tags & Keywords (SEO / Discoverability)
 
 `allydock` • `ally-dock` • `asus-rog-ally` • `rog-ally` • `bazzite-os` • `display-detection` • `edid-parser` • `amd-freesync` • `vrr` • `handheld-daemon` • `hhd` • `steam-input` • `docked-mode` • `tdp-switcher` • `mangohud-fps` • `pipewire-audio` • `decky-loader` • `ge-proton` • `linux-gaming` • `kde-plasma-6` • `handheld-pc` • `gamepad-flapping-fix`
 
 ---
 
-## 📋 Таблиця протестованого середовища та сумісності (Tested Environment & Compatibility Matrix)
+## 📋 Tested Environment & Compatibility Matrix
 
-| Компонент / Підсистема | Версія / Конфігурація | Примітки |
+| Component / Subsystem | Version / Configuration | Technical Notes |
 | :--- | :--- | :--- |
-| **Апаратна платформа** | **ASUS ROG Ally (RC71L.319)** | AMD Ryzen Z1 Extreme, 16GB LPDDR5, 120Hz FreeSync Premium |
-| **Операційна система** | **Bazzite 43 / 44 (Kinoite)** | Ядро Linux `6.17.x-ba29.fc43.x86_64` (fsync kernel) |
-| **Графічне середовище** | **KDE Plasma 6 (Wayland)** | Gamescope Session у Game Mode, SDDM безпарольний автологін |
-| **Display Detection** | **`bin/ally-detect-display.py`** | Чистий Python 3: парсинг EDID (CEA-861, DisplayID, FreeSync OUI `0x00001a`, HDMI VRR OUI `0xc45dd8`, VESA checksum) |
-| **Adaptive Profiler** | **`bin/ally-docked-mode.sh`** | 3 рівні: Handheld (45 FPS/15W), TV 60Hz (60 FPS/25W), AMD VRR (0 Uncapped/30W Turbo) |
-| **Демон геймпада** | **Handheld Daemon (`hhd`)** | Версія `2888122e`, сумісність з Bazzite 44 `inputplumber` |
-| **Decky Loader** | **v3.2.9** (`plugin_loader.service`) | Сумісність з `decky-lsfg-vk`, `CssLoader`, `Junk-Store`, `Bazzite Buddy` |
-| **Proton Runner** | **`GE-Proton11-7`** | Змінна середовища: `PROTON_FSR4_RDNA3_UPGRADE=1` |
-| **Аудіо-сервер (Sound)** | **PipeWire + WirePlumber** | DSP-фільтр каліброваних динаміків + Valve HRTF 7.1 (`sadie_d1.sofa`) |
-| **Накопичувач (SSD)** | **Samsung PM991a 1TB NVMe** (`SAMSUNG MZ9LQ1T0HBLB-00B00`) | Btrfs сабволюми `subvol=root` (`/`) та `subvol=home` (`/var/home`) |
+| **Hardware Platform** | **ASUS ROG Ally (RC71L.319)** | AMD Ryzen Z1 Extreme, 16GB LPDDR5, 120Hz FreeSync Premium |
+| **Operating System** | **Bazzite 43 / 44 (Kinoite)** | Linux Kernel `6.17.x-ba29.fc43.x86_64` (fsync kernel) |
+| **Desktop Environment** | **KDE Plasma 6 (Wayland)** | Gamescope Session in Game Mode, SDDM passwordless autologin |
+| **Display Detection** | **`bin/ally-detect-display.py`** | Pure Python 3: raw binary EDID parsing (CEA-861, DisplayID, AMD FreeSync OUI `0x00001a`, HDMI Forum VRR OUI `0xc45dd8`, VESA checksum) |
+| **Adaptive Profiler** | **`bin/ally-docked-mode.sh`** | 3 Tiers: Handheld (45 FPS / 15W), TV 60Hz (60 FPS / 25W), AMD VRR (0 Uncapped / 30W Turbo) |
+| **Gamepad Daemon** | **Handheld Daemon (`hhd`)** | Version `2888122e` (v2.88+), verified compatible with Bazzite 44 `inputplumber` |
+| **Decky Loader** | **v3.2.9** (`plugin_loader.service`) | Fully verified with `decky-lsfg-vk`, `CssLoader`, `Junk-Store`, `Bazzite Buddy` |
+| **Proton Runner** | **`GE-Proton11-7`** | Set environment variable: `PROTON_FSR4_RDNA3_UPGRADE=1` |
+| **Audio Server (Sound)** | **PipeWire + WirePlumber** | Calibrated speaker DSP filter + Valve HRTF 7.1 spatializer (`sadie_d1.sofa`) |
+| **Storage (NVMe SSD)** | **Samsung PM991a 1TB NVMe** (`SAMSUNG MZ9LQ1T0HBLB-00B00`) | Btrfs subvolumes `subvol=root` (`/`) and `subvol=home` (`/var/home`) |
 
 ---
 
-## 🚀 Ключові можливості AllyDock (Key Features & Architecture)
+## 🚀 Key Features & Problems Solved
 
-### 1. 🖥️ Інтелектуальне визначення дисплея та 3-рівневе адаптивне профілювання (Intelligent Display Detection & 3-Tier Profiling)
-- **Детектор дисплеїв (`bin/ally-detect-display.py`):**
-  - Реалізований на чистому Python 3 (стандартна бібліотека, нуль сторонніх залежностей).
-  - Сканує DRM конектори ядра `/sys/class/drm/card*-*/status` (ігноруючи внутрішній `eDP` та віртуальний `Writeback`).
-  - Читає бінарний файл `edid` коннектора та проводить сувору верифікацію:
-    - Перевірка магічного VESA заголовка `00 FF FF FF FF FF FF 00`.
-    - Перевірка контрольної суми базового блоку та розширень (`sum(block) % 256 == 0`).
-  - Витягує точну комерційну назву монітора з дескрипторів `0xFC` (наприклад, "LG OLED TV", "ASUS ROG XG27").
-  - Розраховує максимальну підтримувану герцовку (`max_hz`) з детальних DTD таймінгів, стандартних таймінгів та блоку обмежень діапазону `0xFD`.
-  - Сканує розширення CTA-861 та DisplayID на наявність:
+### 1. 🖥️ Intelligent Display & VRR Detection with 3-Tier Adaptive Profiling
+- **Hardware Display Detector (`bin/ally-detect-display.py`):**
+  - Written in pure Python 3 using standard library modules only (zero external runtime dependencies).
+  - Scans kernel DRM connector endpoints at `/sys/class/drm/card*-*/status` (ignoring internal `eDP` and virtual `Writeback` connectors).
+  - Reads raw binary `edid` directly from the connector sysfs node with strict validation:
+    - VESA header signature verification: `00 FF FF FF FF FF FF 00`.
+    - Checksum validation across base and extension blocks (`sum(block) % 256 == 0`).
+  - Extracts the exact commercial monitor or TV model string from `0xFC` descriptor blocks (e.g., "LG OLED TV", "ASUS ROG XG27").
+  - Dynamically calculates maximum supported refresh rate (`max_hz`) across Detailed Timing Descriptors (DTD), standard timing bytes, and the Range Limits descriptor (`0xFD`).
+  - Deep-scans CTA-861 and DisplayID extension blocks for:
     - **AMD FreeSync** (Vendor-Specific Data Block, IEEE OUI `0x00001a`);
     - **HDMI Forum VRR** (HF-VSDB, IEEE OUI `0xc45dd8`);
-    - **VESA Adaptive-Sync** (DisplayID 2.0 блок `0x22`).
-  - Перевіряє DRM властивість `vrr_capable` через sysfs та `drm_info`.
-  - Підтримує вивід у форматах `--shell` (для прямого підхоплення у bash) та `--json`.
+    - **VESA Adaptive-Sync** (DisplayID 2.0 block `0x22`).
+  - Verifies the kernel DRM `vrr_capable` connector property via sysfs and `drm_info`.
+  - Supports `--shell` formatted output (for instantaneous `eval` ingestion in bash scripts) and structured `--json` output.
 
-- **3 адаптивні профілі роботи:**
-  1. 📱 **`handheld` (Нічого не підключено / Портатив):**
+- **3-Tier Adaptive Operating Profiles:**
+  1. 📱 **`handheld` (Undocked / Handheld Mode):**
      - **TDP:** `balanced` (15–20W)
      - **CPU EPP:** `balance_power`
      - **GPU DPM:** `auto`
-     - **Цільовий FPS:** **45 FPS** (записується у `MangoHud.conf` та `ally-fps.state` для тихої роботи, плавності на 120Hz екрані 2:1 pulldown та економії батареї)
-     - **Аудіо:** калібрований DSP-профіль динаміків `ROG Ally`
-     - **Контролер:** вбудований у режимі `mode=uinput`
-  2. 📺 **`docked_tv_60` (Звичайний телевізор або офісний 60 Гц монітор):**
+     - **Target FPS:** **45 FPS** (applied to `MangoHud.conf` and `ally-fps.state` for whisper-quiet fan operation, smooth 2:1 pulldown on the 120Hz native screen, and extended battery runtimes)
+     - **Audio:** Calibrated `ROG Ally` speaker DSP equalizer profile
+     - **Controller:** Internal controller enabled in standard mode (`mode=uinput`)
+  2. 📺 **`docked_tv_60` (Standard Living Room TV or 60Hz Office Monitor):**
      - **TDP:** `performance` (25W)
      - **CPU EPP:** `balance_performance`
      - **GPU DPM:** `auto`
-     - **Цільовий FPS:** **60 FPS** (фіксований лок для усунення розривів кадрів та зайвого нагріву на ТБ)
-     - **Аудіо:** HDMI (`alsa_output.pci-0000_09_00.1.hdmi-stereo`)
-     - **Контролер:** Console-Style режим (якщо підключено зовнішній геймпад — вбудований ховається в `mode=hidden`, зовнішній стає Player 1)
-  3. ⚡ **`docked_amd_vrr` (AMD FreeSync / 120Hz+ ігровий монітор):**
+     - **Target FPS:** **60 FPS** (fixed frame cap eliminating tearing, judder, and unnecessary thermal accumulation on fixed 60Hz displays)
+     - **Audio:** External HDMI audio sink (`alsa_output.pci-0000_09_00.1.hdmi-stereo`)
+     - **Controller:** Console Docked Mode (when an external controller is connected, the built-in controller hides into `mode=hidden`, promoting the external pad to Player 1)
+  3. ⚡ **`docked_amd_vrr` (AMD FreeSync / 120Hz+ High-Refresh Gaming Monitor):**
      - **TDP:** `performance` (Turbo 30W)
      - **CPU EPP:** `performance`
-     - **GPU DPM:** `high` (примусові максимальні частоти графічного чіпа RDNA3)
-     - **Цільовий FPS:** **0 (Uncapped / без обмежень кадрової частоти)**
-     - **Аудіо:** HDMI
-     - **Контролер:** Console-Style режим
+     - **GPU DPM:** `high` (locks RDNA3 compute engines at maximum dynamic frequency ceiling)
+     - **Target FPS:** **0 (Uncapped / No frame limiter)**
+     - **Audio:** External HDMI audio sink
+     - **Controller:** Console Docked Mode
 
-- **Безпечний фолбек (Fail-Safe Architecture):**
-  - Якщо зовнішній дисплей підключено, але EDID пошкоджено, відсутній або збій читання — автоматично вмикається безпечний `docked_tv_60` (60 FPS, 25W).
-  - Якщо зовнішній дисплей відключено — гарантовано активується `handheld` (45 FPS, 15W).
-
----
-
-### 2. 🎮 Режим Console-Style (Docked Mode Switcher & Controller Arbitration)
-- **Проблема:** При встановленні ROG Ally у док-станцію та підключенні телевізора разом із бездротовим або USB-геймпадом (наприклад, Xbox або DualSense) вбудований геймпад консолі залишався першим пристроєм у системі. Більшість ігор призначали зовнішній контролер як «Гравець 2» (Player 2), через що грати з дивана було неможливо без ручних маніпуляцій.
-- **Рішення AllyDock:** Скрипт `ally-docked-mode.sh` у зв'язці з udev відстежує стан підключення зовнішнього дисплея та зовнішнього геймпада:
-  - **ТВ + зовнішній геймпад:** Вбудований контролер Ally миттєво ховається через API HHD (`controllers.rog_ally.controller_mode.mode=hidden`), і зовнішній геймпад стає **Гравцем 1 (Player 1)**.
-  - **ТВ без зовнішнього контролера:** Вбудований контролер залишається активним (`mode=uinput`) для комфортної гри з рук перед великим екраном.
-  - **Портативний режим (Handheld):** Контролер автоматично активується у вихідний стан.
+- **Fail-Safe Architecture:**
+  - If an external display is physically connected but the EDID is corrupted, missing, or fails checksum validation, AllyDock safely defaults to `docked_tv_60` (60 FPS, 25W).
+  - When an external display is disconnected, the system unconditionally reverts to `handheld` (45 FPS, 15W).
 
 ---
 
-### 3. 🛡️ Виправлення петлі геймпада (Controller Flapping Fix)
-- **Проблема (Чому відвалювався геймпад):**
-  1. Раніше скрипти відключали контролер шляхом фізичного unbind USB-інтерфейсу ядра: `echo 1-2:1.0 > /sys/bus/usb/drivers/xpad/unbind`. Це ламало дескриптори у Gamescope (`Failed to open device /dev/input/event17`) та спричиняло помилки ядра URB (`unable to receive magic message: -32`).
-  2. HHD емулює пристрій `Xbox Elite` для роботи задніх пелюсток (M1/M2). Скрипти старого зразка через помилку детекції вважали цей **віртуальний Xbox Elite контролер зовнішнім геймпадом**!
-  3. Це породжувало нескінченну рекурсивну петлю (flapping loop 10+ разів на хвилину): консоль виявляла свій власний віртуальний геймпад, вимикала його, бачила що геймпадів нема, вмикала знову, і так по колу.
-- **Рішення AllyDock:**
-  - Повністю вилучено `xpad unbind`. Перемикання виконується виключно через програмний HHD API.
-  - Додано строгу udev-фільтрацію з ігноруванням `/devices/virtual/input/*`, що надійно відрізняє справжні фізичні геймпади від емульованих віртуальних вузлів.
-  - Реалізовано файловий м'ютекс (`flock` на `/var/home/V/.local/share/ally-docked.lock`), що усуває race condition при масових подіях підключення.
+### 2. 🎮 Console-Style Docked Mode (External Controller Priority & Arbitration)
+- **The Problem:** When placing the ROG Ally into a docking station and connecting it to a TV along with a wireless or USB gamepad (such as an Xbox Wireless Controller or DualSense), the handheld's internal controller remained registered as the primary gamepad (`/dev/input/js0` / Player 1). Games launched from couch distance assigned the external pad to "Player 2", rendering couch gameplay impossible without tedious manual controller reordering.
+- **The AllyDock Solution:** `ally-docked-mode.sh` coordinates with udev to monitor external display and external controller attachment events:
+  - **TV Connected + External Gamepad Present:** The Ally's internal gamepad is instantaneously hidden via the HHD IPC API (`controllers.rog_ally.controller_mode.mode=hidden`), elevating the external gamepad to **Player 1**.
+  - **TV Connected without External Gamepad:** The internal gamepad remains fully active (`mode=uinput`) for comfortable handheld-style controls while playing in front of a big screen.
+  - **Handheld Mode (Undocked):** Internal controller mode is immediately restored to its default state.
 
 ---
 
-### 4. 🔊 Розумний аудіо-роутер PipeWire (HDMI TV vs DSP-динаміки)
-- **Проблема:** У системі PipeWire присутні 4 аудіо-виходи: сирий ЦАП ALC294 (`analog-stereo`), HDMI вихід (`hdmi-stereo`), просторовий фільтр `effect_input.spatializer` та калібрований DSP-вузол `ROG Ally`. При перемиканні телевізора звук часто потрапляв на сирий ALC294 (звук був плаский, тихий, без басів) або залишався в консолі.
-- **Рішення AllyDock:** `ally-docked-mode.sh` автоматично перемикає активний Default Audio Sink:
-  - При підключенні до ТБ звук йде на `alsa_output.pci-0000_09_00.1.hdmi-stereo` (динаміки телевізора/саундбар).
-  - При відключенні від ТБ звук повертається на фірмовий калібрувальний DSP-еквалайзер **`ROG Ally`** (насичений звук із глибоким басом).
+### 3. 🛡️ Controller Flapping Fix (Loop Elimination)
+- **The Problem (Why controllers were disconnecting and cycling):**
+  1. Legacy community scripts attempted to disable the built-in controller by physically unbinding the kernel USB device: `echo 1-2:1.0 > /sys/bus/usb/drivers/xpad/unbind`. This forcibly invalidated file descriptors inside Gamescope (`Failed to open device /dev/input/event17`) and flooded kernel logs with URB transfer errors (`unable to receive magic message: -32`).
+  2. HHD emulates an `Xbox Elite` controller to expose the rear macro paddles (M1/M2) to Steam Input. Outdated scripts mistakenly identified this **virtual Xbox Elite device as a physical external gamepad**!
+  3. This triggered a recursive flapping loop (cycling 10+ times per minute): the system detected its own virtual gamepad, disabled the controller, noticed zero gamepads were present, re-enabled it, and repeated indefinitely.
+- **The AllyDock Solution:**
+  - Completely purged destructive `xpad unbind` calls. Controller arbitration is managed exclusively via the official HHD high-level API.
+  - Strict udev filtering explicitly ignores `/devices/virtual/input/*`, guaranteeing deterministic distinction between physical USB/Bluetooth gamepads and virtual emulated input nodes.
+  - File-based mutex lock (`flock` on `/var/home/V/.local/share/ally-docked.lock`) guarantees atomic execution and eliminates race conditions during rapid hotplug events.
 
 ---
 
-### 5. 🐕 Надійний Watchdog & System-Sleep Hook
-- **Динамічний Watchdog (`bin/hhd-watchdog.sh`):** Автоматично визначає активний стек у системі (`hhd.service` у Bazzite 43 чи `inputplumber.service` у Bazzite 44) і перезапускає саме його. Працює як systemd timer кожні 15 хвилин без навантаження на процесор.
-- **Хук виходу зі сну (`sleep/10-hhd-watchdog-sleep.sh`):** Встановлюється у `/etc/systemd/system-sleep/`. При пробудженні консолі відновлює стан контролерів та запобігає зависанню введення.
+### 4. 🔊 Smart PipeWire Audio Router (HDMI TV vs. Calibrated DSP Speakers)
+- **The Problem:** PipeWire exposes 4 distinct audio endpoints on the ROG Ally: the raw Realtek ALC294 DAC (`analog-stereo`), the HDMI audio output (`hdmi-stereo`), the spatial audio filter `effect_input.spatializer`, and the hardware-calibrated `ROG Ally` DSP speaker processing node. When docking to a TV, audio frequently routed to the raw ALC294 DAC (yielding flat, tinny sound without bass) or remained trapped on the handheld.
+- **The AllyDock Solution:** `ally-docked-mode.sh` automatically arbitrates the active Default Audio Sink:
+  - When docked to a TV: Audio routes to `alsa_output.pci-0000_09_00.1.hdmi-stereo` (TV speakers or living-room soundbar).
+  - When undocked: Audio returns to the hardware-calibrated **`ROG Ally`** DSP equalizer sink, restoring rich acoustic dynamics and deep bass response.
 
 ---
 
-### 6. 📜 Steam Desktop Layout: Плавний вертикальний Turbo-скролінг
-- **Проблема:** У стандартному Desktop Layout стіки відповідають лише за поодинокі натискання клавіш або стрілок, що робить прокрутку сторінок у браузері надзвичайно повільною та незручною.
-- **Рішення AllyDock:** У конфігураціях `desktop_xboxone.vdf` та `desktop_neptune.vdf` лівий стік налаштовано на `mouse_wheel SCROLL_UP` та `mouse_wheel SCROLL_DOWN` із параметрами **Turbo Repeat**:
+### 5. 🐕 Robust Watchdog & System-Sleep Recovery
+- **Dynamic Watchdog (`bin/hhd-watchdog.sh`):** Intelligently detects the active input daemon stack (`hhd.service` on Bazzite 43 or `inputplumber.service` on Bazzite 44) and manages service health. Runs seamlessly as a `systemd` timer every 15 minutes with zero measurable CPU overhead.
+- **Sleep Recovery Hook (`sleep/10-hhd-watchdog-sleep.sh`):** Installed into `/etc/systemd/system-sleep/`. Re-synchronizes controller states and restores proper input mappings immediately after the device wakes from suspend.
+
+---
+
+### 6. 📜 Steam Desktop Layout: Smooth Vertical Turbo-Scrolling
+- **The Problem:** The stock Steam Desktop Layout configures analog sticks for discrete single keystrokes or arrow clicks, turning web browsing and document navigation into a painfully slow, staccato chore.
+- **The AllyDock Solution:** In `desktop_xboxone.vdf` and `desktop_neptune.vdf`, the left analog stick is mapped to `mouse_wheel SCROLL_UP` and `mouse_wheel SCROLL_DOWN` with calibrated **Turbo Repeat**:
   ```vdf
   "hold_repeats" "1"
   "repeat_rate"  "20"
   ```
-  Відхилення лівого стіка вгору або вниз забезпечує безперервне, плавне гортання сайтів і документів.
+  Tilting the left stick up or down delivers continuous, fluid, momentum-like scrolling through websites and documents.
 
 ---
 
-### 7. 🎯 Прецизійний правий стік (Cursor Precision & Smoothing)
-- **Проблема:** Тремтіння курсора під час спроби натиснути на дрібні кнопки інтерфейсу або нелінійний непередбачуваний рух.
-- **Рішення AllyDock:** Додано точні коефіцієнти позиціонування:
-  - `"sensitivity" "130"` — калібрована чутливість.
-  - `"response_curve" "2"` — експоненційна крива: мікрорухи біля центру стіка дають піксельну точність, глибоке відхилення стіка швидко переміщує курсор через весь екран.
-  - `"mouse_smoothing" "1"` — апаратне згладжування тремтіння пальців.
-  - `"deadzone_inner_radius" "6000"` — зона спокою, що виключає випадковий дрейф курсора.
+### 7. 🎯 Precision Right Stick (Cursor Ballistics & Jitter Smoothing)
+- **The Problem:** Cursor jitter when targeting fine desktop UI elements, or unpredictable non-linear cursor acceleration.
+- **The AllyDock Solution:** Calibrated tracking parameters:
+  - `"sensitivity" "130"` — tuned baseline sensitivity.
+  - `"response_curve" "2"` — exponential response curve: micro-movements near deadzone provide sub-pixel accuracy, full deflections sweep rapidly across the 1080p display.
+  - `"mouse_smoothing" "1"` — hardware-level micro-jitter suppression for finger tremor elimination.
+  - `"deadzone_inner_radius" "6000"` — clean deadzone completely eliminating stick drift.
 
 ---
 
-## 📂 Структура репозиторію та опис файлів
+## 📂 Repository Structure & File Overview
 
 ```
-devices/allydock/
-├── VERSION                          # Файл версії конфігураційного пакету AllyDock (1.1.0)
-├── README.md                        # Детальна документація, специфікація та інструкції AllyDock
-├── restore.sh                       # Єдиний bash-скрипт відновлення конфігурацій (one-command setup)
+AllyDock/
+├── VERSION                          # Version identifier (1.1.0)
+├── README.md                        # Comprehensive documentation and technical specification
+├── restore.sh                       # Unified bash deployment script (one-command setup)
 ├── bin/
-│   ├── ally-detect-display.py       # Детектор дисплеїв: EDID, VESA checksum, FreeSync, HDMI VRR, Hz
-│   ├── ally-docked-mode.sh          # Головний адаптивний оркестратор (3 профілі, TDP, EPP, FPS, Audio)
-│   └── hhd-watchdog.sh              # Сторожовий демон самовідновлення сервісів HHD / InputPlumber
+│   ├── ally-detect-display.py       # Display detection engine: EDID, VESA checksum, FreeSync, HDMI VRR, Hz
+│   ├── ally-docked-mode.sh          # Primary adaptive orchestrator (3 profiles, TDP, EPP, FPS, Audio)
+│   └── hhd-watchdog.sh              # Watchdog daemon for self-healing HHD / InputPlumber services
 ├── hhd/
-│   └── state.yml                    # Експортований робочий стан HHD (DualSense/Xbox, paddles as Steam Input)
+│   └── state.yml                    # Exported working HHD configuration (DualSense/Xbox, paddles as Steam Input)
 ├── sleep/
-│   └── 10-hhd-watchdog-sleep.sh     # Системний хук /etc/systemd/system-sleep/ для виходу з режиму сну
+│   └── 10-hhd-watchdog-sleep.sh     # System sleep hook for /etc/systemd/system-sleep/ (suspend/resume handler)
 ├── steam/
-│   ├── desktop_neptune.vdf          # Патчений шаблон Steam Input Desktop Layout (Neptune / Deck style)
-│   └── desktop_xboxone.vdf          # Патчений шаблон Steam Input Desktop Layout (Xbox One / Ally style)
+│   ├── desktop_neptune.vdf          # Patched Steam Input Desktop Layout (Neptune / Deck style)
+│   └── desktop_xboxone.vdf          # Patched Steam Input Desktop Layout (Xbox One / Ally style)
 ├── systemd/
-│   ├── ally-docked.service          # Одноразовий системний сервіс обробки подій підключення док-станції
-│   ├── hhd-watchdog.service         # Фонова служба перевірки стану демонів введення
-│   └── hhd-watchdog.timer           # Таймер регулярного опитування watchdog (кожні 15 хвилин)
+│   ├── ally-docked.service          # Oneshot system service executing dock state transitions
+│   ├── hhd-watchdog.service         # Background service unit verifying input daemon health
+│   └── hhd-watchdog.timer           # Systemd timer unit triggering watchdog checks every 15 minutes
 └── udev/
-    └── 99-ally-docked.rules         # Udev-правила реакції на DRM/HDMI дисплеї та USB геймпади
+    └── 99-ally-docked.rules         # Udev event rules for DRM/HDMI display and USB gamepad hotplug
 ```
 
 ---
 
-## ⚡ Швидке розгортання та відновлення AllyDock (Quick Start)
+## ⚡ Quick Installation & Restoration (Quick Start)
 
-Якщо ви перевстановили Bazzite OS, зробили rebase на нову версію Fedora або розгортаєте комплекс AllyDock:
+Whether you reinstalled Bazzite OS, performed a system rebase to a new Fedora release, or are deploying AllyDock on a fresh configuration:
 
-### Крок 1. Клонуйте репозиторій та перейдіть у каталог проекту
+### Step 1. Clone the repository and navigate into the project directory
 ```bash
-git clone https://github.com/VadymTaras/rog-ally-bazzite-config.git
-cd rog-ally-bazzite-config
+git clone https://github.com/VadymTaras/AllyDock.git && cd AllyDock && sudo ./restore.sh
 ```
 
-### Крок 2. Запустіть скрипт відновлення з правами суперкористувача
-```bash
-sudo ./restore.sh
-```
+### What `restore.sh` executes automatically:
+- Creates required directory structures across `/etc/` and the user home directory (`/var/home/V/`).
+- Installs and applies executable permissions to `ally-docked-mode.sh`, `ally-detect-display.py`, and `hhd-watchdog.sh`.
+- Installs udev rules and executes `udevadm control --reload-rules && udevadm trigger`.
+- Deploys `ally-docked.service`, `hhd-watchdog.service`, and activates `hhd-watchdog.timer`.
+- Installs the system sleep hook `/etc/systemd/system-sleep/10-hhd-watchdog-sleep.sh`.
+- Restores `/etc/hhd/state.yml` with proper system permissions.
+- Installs the modified Steam Input Desktop Layout templates into `controller_base`.
 
-Скрипт автоматично:
-- Створить необхідні каталоги в системі та домашньому каталозі користувача `V` (`/var/home/V/`).
-- Встановить та надасть права на виконання скриптам `ally-docked-mode.sh`, `ally-detect-display.py` та `hhd-watchdog.sh`.
-- Встановить udev-правила та виконає `udevadm control --reload-rules && udevadm trigger`.
-- Розгорне служби `ally-docked.service`, `hhd-watchdog.service` та активує `hhd-watchdog.timer`.
-- Встановить системний хук `/etc/systemd/system-sleep/10-hhd-watchdog-sleep.sh`.
-- Відновить конфігурацію `/etc/hhd/state.yml` з коректними правами доступу.
-- Встановить модифіковані шаблони Steam Input Desktop Layout у `controller_base`.
-
-### Крок 3. Перезавантажте консоль
+### Step 2. Reboot your console
 ```bash
 sudo systemctl reboot
 ```
 
 ---
 
-## 🕹️ Керування та гарячі клавіші у системі
+## 🕹️ Desktop Mode Controls & Shortcuts
 
-### Апаратний режим миші (Hardware Mouse Mode від HHD)
-Працює на рівні мікроконтролера MCU (`0b05:1abe`) навіть тоді, коли Steam вимкнено або завис:
-- 🔘 **Увімкнення/Вимкнення:** Затиснути кнопку **Armoury Crate** (кнопка праворуч від екрана з фірмовим логотипом ROG / трикутником) на **~1.5 секунди**.
-  - **Подвійна вібрація:** Режим апаратної миші увімкнено!
-  - **Одинарна вібрація:** Повернення у режим стандартного геймпада.
-- 🕹️ **Правий стік:** Рух курсора миші по екрану.
-- 🔘 **RB (Правий бампер):** Лівий клік миші (LMB).
-- 🔘 **RT (Правий тригер):** Правий клік миші (RMB).
-- 🕹️ **Лівий стік / D-Pad:** Вертикальний скролінг коліщатком.
+### Hardware Mouse Mode (HHD MCU Level)
+Operates directly at the hardware microcontroller level (`0b05:1abe`), remaining fully functional even if Steam is closed or unresponsive:
+- 🔘 **Toggle ON / OFF:** Press and hold the **Armoury Crate** button (top-right button with the ROG triangle logo) for **~1.5 seconds**.
+  - **Double Haptic Pulse:** Hardware Mouse Mode ENABLED.
+  - **Single Haptic Pulse:** Reverted to standard gamepad mode.
+- 🕹️ **Right Stick:** Mouse cursor positioning.
+- 🔘 **RB (Right Bumper):** Left Mouse Button (LMB).
+- 🔘 **RT (Right Trigger):** Right Mouse Button (RMB).
+- 🕹️ **Left Stick / D-Pad:** Vertical mouse wheel scroll.
 
-### Програмний режим миші (Steam Input Desktop Layout)
-Активний за замовчуванням у робочому столі KDE Plasma 6 при запущеному у фоні Steam:
-- 🕹️ **Правий стік:** Прецизійне керування курсором миші (експоненційна крива + згладжування тремтіння).
-- 🕹️ **Лівий стік:** Плавний вертикальний скролінг сторінок з функцією Turbo автоповтору.
-- 🔘 **RT (Правий тригер):** Лівий клік миші (LMB).
-- 🔘 **LT (Лівий тригер):** Правий клік миші (RMB).
+### Software Mouse Mode (Steam Input Desktop Layout)
+Active by default in KDE Plasma 6 Wayland desktop when Steam is running in the background:
+- 🕹️ **Right Stick:** High-precision cursor ballistics (exponential curve + jitter smoothing).
+- 🕹️ **Left Stick:** Smooth vertical turbo scrolling with rapid auto-repeat.
+- 🔘 **RT (Right Trigger):** Left Mouse Button (LMB).
+- 🔘 **LT (Left Trigger):** Right Mouse Button (RMB).
 
-### Віртуальна клавіатура у Desktop Mode
-- ⌨️ **Шорткат HHD:** Швидкий короткий тап по кнопці **Armoury Crate** (кнопка праворуч від екрана).
-- 👆 **Сенсорний екран (Gesture):** Свайп пальцем знизу вгору від нижнього краю екрана.
-- 🎮 **Шорткат Steam:** Кнопка **Command Center** (ліворуч від екрана) + **`X`**.
-- 🖥️ **Wayland Virtual Keyboard:** При натисканні на текстові поля вводу в KDE Plasma екранна клавіатура з'являється автоматично.
+### Virtual Keyboard in Desktop Mode
+- ⌨️ **HHD Shortcut:** Quick single tap on the **Armoury Crate** button.
+- 👆 **Touchscreen Gesture:** Swipe up with one finger from the bottom screen bezel.
+- 🎮 **Steam Shortcut:** Press **Command Center** button (left side of display) + **`X`**.
+- 🖥️ **Wayland Virtual Keyboard:** Automatically pops up upon focusing text input fields in KDE Plasma.
 
 ---
 
-## 🛠️ Корисні команди для діагностики та керування
+## 🛠️ CLI Diagnostic Commands
 
-### Детальний статус системи та дисплея
+### Comprehensive System & Display Status
 ```bash
 /var/home/V/.local/bin/ally-docked-mode.sh status
 ```
 
-### Запуск детектора дисплея безпосередньо
+### Direct Display Detection Utility
 ```bash
-# Людський вивід:
+# Human-readable diagnostic output:
 /var/home/V/.local/bin/ally-detect-display.py
 
-# JSON формат:
+# Structured JSON output:
 /var/home/V/.local/bin/ally-detect-display.py --json
 
-# Shell формат (для eval/скриптів):
+# Shell environment format (for script evaluation):
 /var/home/V/.local/bin/ally-detect-display.py --shell
 ```
 
-### Ручне перемикання профілів
+### Manual Profile Switching
 ```bash
-# Примусово активувати портативний профіль (15W Balanced, 45 FPS, динаміки):
+# Force handheld profile (15W Balanced, 45 FPS, internal DSP speakers):
 /var/home/V/.local/bin/ally-docked-mode.sh handheld
 
-# Примусово активувати телевізійний 60Hz профіль (25W Performance, 60 FPS, HDMI):
+# Force TV 60Hz profile (25W Performance, 60 FPS, HDMI audio):
 /var/home/V/.local/bin/ally-docked-mode.sh docked-tv
 
-# Примусово активувати ігровий VRR профіль (30W Turbo, Uncapped FPS, GPU High DPM, HDMI):
+# Force VRR Gaming profile (30W Turbo, Uncapped FPS, GPU High DPM, HDMI audio):
 /var/home/V/.local/bin/ally-docked-mode.sh docked-vrr
 ```
 
-### Ручне керування кадровою частотою (FPS Target)
+### Manual Frame Rate Targets (MangoHud)
 ```bash
 /var/home/V/.local/bin/ally-docked-mode.sh fps-45
 /var/home/V/.local/bin/ally-docked-mode.sh fps-60
 /var/home/V/.local/bin/ally-docked-mode.sh fps-uncapped
 ```
 
-### Ручне перемикання аудіо
+### Manual Audio Sink Switching
 ```bash
-# Звук на HDMI телевізора:
+# Route audio to HDMI (TV / soundbar):
 /var/home/V/.local/bin/ally-docked-mode.sh audio-hdmi
 
-# Звук на калібровані DSP динаміки ROG Ally:
+# Route audio to calibrated ROG Ally DSP speakers:
 /var/home/V/.local/bin/ally-docked-mode.sh audio-speaker
 ```
 
-### Перевірка логів та служб
+### Logs & Service Verification
 ```bash
 /var/home/V/.local/bin/ally-docked-mode.sh log
 systemctl status hhd-watchdog.timer
@@ -288,6 +283,6 @@ systemctl status hhd-watchdog.service
 
 ---
 
-## 📜 Ліцензія та авторство
+## 📜 Disclaimer & MIT License
 
-Комплекс **AllyDock** розроблено, оптимізовано та протестовано для ASUS ROG Ally на базі Bazzite OS. Розповсюджується під ліцензією MIT — вільно використовуйте, модифікуйте та інтегруйте у власні збірки!
+The **AllyDock** suite was designed, tuned, and tested for the ASUS ROG Ally on Bazzite OS. Distributed under the permissive [MIT License](LICENSE) — feel free to use, modify, and integrate it into your own handheld builds!
