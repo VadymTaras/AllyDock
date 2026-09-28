@@ -7,7 +7,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-VERSION=$(cat VERSION 2>/dev/null || echo "1.0.0")
+VERSION=$(cat VERSION 2>/dev/null || echo "1.1.0")
 echo "===================================================="
 echo "       ⚓ AllyDock Suite for Bazzite OS v$VERSION"
 echo "===================================================="
@@ -23,8 +23,9 @@ USER_HOME="/var/home/$TARGET_USER"
 echo "[+] Відновлення скриптів у $USER_HOME/.local/bin..."
 mkdir -p "$USER_HOME/.local/bin"
 cp -f bin/ally-docked-mode.sh "$USER_HOME/.local/bin/"
+cp -f bin/ally-detect-display.py "$USER_HOME/.local/bin/"
 cp -f bin/hhd-watchdog.sh "$USER_HOME/.local/bin/"
-chmod +x "$USER_HOME/.local/bin/"*.sh
+chmod +x "$USER_HOME/.local/bin/"*.sh "$USER_HOME/.local/bin/"*.py
 chown -R "$TARGET_USER:$TARGET_USER" "$USER_HOME/.local/bin"
 
 echo "[+] Відновлення udev правил..."
