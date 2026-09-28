@@ -90,9 +90,9 @@ def parse_edid(data: bytes) -> dict:
                     raw_name.split(b"\n")[0]
                     .split(b"\x00")[0]
                     .decode("ascii", errors="replace")
-                    .strip()
                 )
-                if clean_name:
+                clean_name = "".join(c for c in clean_name if 32 <= ord(c) <= 126).strip()
+                if clean_name and not name:
                     name = clean_name
             elif desc_type == 0xFD:  # Monitor Range Limits
                 max_v = block[6]
@@ -104,8 +104,8 @@ def parse_edid(data: bytes) -> dict:
                     .split(b"\n")[0]
                     .split(b"\x00")[0]
                     .decode("ascii", errors="replace")
-                    .strip()
                 )
+                clean_str = "".join(c for c in clean_str if 32 <= ord(c) <= 126).strip()
                 if clean_str:
                     name = clean_str
 
@@ -207,8 +207,8 @@ def parse_edid(data: bytes) -> dict:
                             .split(b"\n")[0]
                             .split(b"\x00")[0]
                             .decode("ascii", errors="replace")
-                            .strip()
                         )
+                        clean_name = "".join(c for c in clean_name if 32 <= ord(c) <= 126).strip()
                         if clean_name:
                             name = clean_name
 
