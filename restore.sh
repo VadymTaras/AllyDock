@@ -4,6 +4,14 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+VERSION=$(cat VERSION 2>/dev/null || echo "1.0.0")
+echo "===================================================="
+echo "       ⚓ AllyDock Suite for Bazzite OS v$VERSION"
+echo "===================================================="
+
 if [ "$EUID" -ne 0 ]; then
     echo "[-] Будь ласка, запустіть цей скрипт з правами sudo або від root: sudo ./restore.sh"
     exit 1
