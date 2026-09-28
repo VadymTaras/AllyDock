@@ -178,7 +178,14 @@ set_power_profile() {
 set_cpu_epp() {
     local target="$1" # "balance_power", "balance_performance", or "performance"
     local count=0
-    for epp in /sys/devices/system/cpu/cpu*/power/energy_performance_preference; do
+    local epp_files=(/sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference)
+    if [ ! -e "${epp_files[0]}" ]; then
+        epp_files=(/sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference)
+    fi
+    if [ ! -e "${epp_files[0]}" ]; then
+        epp_files=(/sys/devices/system/cpu/cpu*/power/energy_performance_preference)
+    fi
+    for epp in "${epp_files[@]}"; do
         [ -f "$epp" ] || continue
         write_sysfs "$target" "$epp"
         count=$((count + 1))
@@ -402,7 +409,7 @@ case "${1:-check}" in
         [ -f "$AUDIO_STATE_FILE" ] && cur_audio=$(cat "$AUDIO_STATE_FILE")
 
         cur_acpi=$(cat /sys/firmware/acpi/platform_profile 2>/dev/null || echo "N/A")
-        cur_epp=$(cat /sys/devices/system/cpu/cpu0/power/energy_performance_preference 2>/dev/null || echo "N/A")
+        cur_epp=$(cat /sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference 2>/dev/null || cat /sys/devices/system/cpu/cpufreq/policy0/energy_performance_preference 2>/dev/null || cat /sys/devices/system/cpu/cpu0/power/energy_performance_preference 2>/dev/null || echo "N/A")
         cur_dpm=$(cat /sys/class/drm/card0/device/power_dpm_force_performance_level 2>/dev/null || cat /sys/class/drm/card1/device/power_dpm_force_performance_level 2>/dev/null || echo "N/A")
 
         echo "======================================================================"
