@@ -130,7 +130,7 @@ is_external_controller_connected() {
 
         # 2. Skip virtual devices (uinput, HHD virtual Xbox Elite pad, steam virtual)
         case "$devpath" in
-            */virtual/*) continue ;;
+            */virtual/input/*) continue ;;
         esac
 
         local name=""
