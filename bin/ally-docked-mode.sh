@@ -306,41 +306,44 @@ disable_internal_controller() {
     fi
 }
 
-start_idle_guard() {
-    local cur_status="inactive"
+get_idle_guard_status() {
+    local st
     if [ "$(id -u)" -eq 0 ]; then
-        cur_status=$(sudo -u V env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus systemctl --user is-active "$KEEPALIVE_SERVICE" 2>/dev/null || echo "inactive")
-        if [ "$cur_status" != "active" ]; then
-            log "DOCKED: Активація захисту від заставки Steam (AllyDock Idle Guard)..."
+        st=$(sudo -u V env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus systemctl --user is-active "$KEEPALIVE_SERVICE" 2>/dev/null || true)
+    else
+        st=$(systemctl --user is-active "$KEEPALIVE_SERVICE" 2>/dev/null || true)
+    fi
+    echo "${st:-inactive}"
+}
+
+start_idle_guard() {
+    local cur_status
+    cur_status=$(get_idle_guard_status)
+    if [ "$cur_status" != "active" ]; then
+        log "DOCKED: Активація захисту від заставки Steam (AllyDock Idle Guard)..."
+        if [ "$(id -u)" -eq 0 ]; then
             sudo -u V env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus \
                 systemctl --user start "$KEEPALIVE_SERVICE" 2>/dev/null || true
-        fi
-    else
-        cur_status=$(systemctl --user is-active "$KEEPALIVE_SERVICE" 2>/dev/null || echo "inactive")
-        if [ "$cur_status" != "active" ]; then
-            log "DOCKED: Активація захисту від заставки Steam (AllyDock Idle Guard)..."
+        else
             systemctl --user start "$KEEPALIVE_SERVICE" 2>/dev/null || true
         fi
     fi
 }
 
 stop_idle_guard() {
-    local cur_status="inactive"
-    if [ "$(id -u)" -eq 0 ]; then
-        cur_status=$(sudo -u V env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus systemctl --user is-active "$KEEPALIVE_SERVICE" 2>/dev/null || echo "inactive")
-        if [ "$cur_status" = "active" ]; then
-            log "HANDHELD: Деактивація захисту від заставки Steam..."
+    local cur_status
+    cur_status=$(get_idle_guard_status)
+    if [ "$cur_status" = "active" ]; then
+        log "HANDHELD: Деактивація захисту від заставки Steam..."
+        if [ "$(id -u)" -eq 0 ]; then
             sudo -u V env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus \
                 systemctl --user stop "$KEEPALIVE_SERVICE" 2>/dev/null || true
-        fi
-    else
-        cur_status=$(systemctl --user is-active "$KEEPALIVE_SERVICE" 2>/dev/null || echo "inactive")
-        if [ "$cur_status" = "active" ]; then
-            log "HANDHELD: Деактивація захисту від заставки Steam..."
+        else
             systemctl --user stop "$KEEPALIVE_SERVICE" 2>/dev/null || true
         fi
     fi
 }
+
 
 apply_profile() {
     local target_profile="$1"
@@ -455,12 +458,7 @@ case "${1:-check}" in
         cur_epp=$(cat /sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference 2>/dev/null || cat /sys/devices/system/cpu/cpufreq/policy0/energy_performance_preference 2>/dev/null || cat /sys/devices/system/cpu/cpu0/power/energy_performance_preference 2>/dev/null || echo "N/A")
         cur_dpm=$(cat /sys/class/drm/card0/device/power_dpm_force_performance_level 2>/dev/null || cat /sys/class/drm/card1/device/power_dpm_force_performance_level 2>/dev/null || echo "N/A")
 
-        guard_status="inactive"
-        if [ "$(id -u)" -eq 0 ]; then
-            guard_status=$(sudo -u V env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus systemctl --user is-active "$KEEPALIVE_SERVICE" 2>/dev/null || echo "inactive")
-        else
-            guard_status=$(systemctl --user is-active "$KEEPALIVE_SERVICE" 2>/dev/null || echo "inactive")
-        fi
+        guard_status=$(get_idle_guard_status)
 
         echo "======================================================================"
         echo "       ⚓ AllyDock Suite v1.2.0 — Status & Adaptive Profiling"
