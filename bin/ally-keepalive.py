@@ -181,6 +181,44 @@ class InputActivityMonitor:
         self.devices.clear()
 
 
+def is_maintenance_active() -> bool:
+    """Checks if active SSH sessions or developer maintenance is running."""
+    try:
+        res = subprocess.run(
+            ["ss", "-t", "state", "established", "sport = :22"],
+            capture_output=True,
+            text=True,
+            timeout=1,
+        )
+        if res.returncode == 0:
+            lines = [l for l in res.stdout.strip().splitlines() if ":" in l and not l.startswith("Recv-Q")]
+            return len(lines) > 0
+    except Exception:
+        pass
+    return False
+
+
+def trigger_system_suspend():
+    """Triggers clean system suspend when user is truly idle to prevent infinite screensaver on TV."""
+    try:
+        logger.info("Initiating system suspend (putting ROG Ally / TV to sleep cleanly)...")
+        subprocess.run(
+            [
+                "busctl", "call", "org.freedesktop.login1",
+                "/org/freedesktop/login1", "org.freedesktop.login1.Manager",
+                "Suspend", "b", "true",
+            ],
+            timeout=5,
+            check=False,
+        )
+    except Exception as exc:
+        logger.debug("busctl suspend failed: %s, falling back to systemctl suspend", exc)
+        try:
+            subprocess.run(["systemctl", "suspend"], timeout=5, check=False)
+        except Exception:
+            pass
+
+
 def main():
     global RUNNING
     signal.signal(signal.SIGTERM, signal_handler)
@@ -244,15 +282,24 @@ def main():
 
             # If evdev is not available, we cannot monitor input devices, so we do not enforce idle cutoff
             if EVDEV_AVAILABLE and evdev is not None:
+                if is_maintenance_active():
+                    # While SSH session or remote development is active, strictly prevent screensaver and sleep
+                    last_real_input = now
+                    if was_idle:
+                        was_idle = False
+                        reset_steam_idle()
+                        last_ping = now
+
                 idle_seconds = now - last_real_input
                 if idle_seconds >= max_idle:
                     if not was_idle:
                         logger.info(
-                            "User idle for %.1f seconds (>= %ds). Suspending keepalive pings to allow SteamOS / Bazzite suspend.",
+                            "User idle for %.1f seconds (>= %ds) with no active SSH. Triggering sleep to turn off screen.",
                             idle_seconds,
                             max_idle,
                         )
                         was_idle = True
+                        trigger_system_suspend()
                     continue
 
             if now - last_ping >= interval:
