@@ -110,7 +110,7 @@ def main():
         now = time.monotonic()
         if now - last_ping >= interval:
             last_ping = now
-            logger.debug("Sending periodic keepalive ping...")
+            logger.info("Sending periodic keepalive ping (evdev syn + D-Bus activity)...")
 
             # 1. Micro-sync on evdev
             if ui:
