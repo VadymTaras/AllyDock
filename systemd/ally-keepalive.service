@@ -1,0 +1,13 @@
+[Unit]
+Description=AllyDock Steam Idle & Screensaver Guard
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /var/home/V/.local/bin/ally-keepalive.py
+Restart=always
+RestartSec=3
+StandardOutput=journal
+
+[Install]
+WantedBy=default.target

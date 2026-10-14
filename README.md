@@ -1,8 +1,8 @@
-# ⚓ AllyDock (v1.1.0) - Autonomous Docking & System Optimization Suite for ASUS ROG Ally on Bazzite OS
+# ⚓ AllyDock (v1.2.0) - Autonomous Docking & System Optimization Suite for ASUS ROG Ally on Bazzite OS
 ### Intelligent Display Detection, 3-Tier Adaptive Profiling & Seamless Docked Gaming Suite
 
 [![Project](https://img.shields.io/badge/Project-AllyDock-orange.svg)](#)
-[![Version](https://img.shields.io/badge/Version-v1.1.0-blue.svg)](VERSION)
+[![Version](https://img.shields.io/badge/Version-v1.2.0-blue.svg)](VERSION)
 [![OS](https://img.shields.io/badge/OS-Bazzite%2043%20%7C%2044-purple.svg)](https://bazzite.gg)
 [![Hardware](https://img.shields.io/badge/Hardware-ASUS%20ROG%20Ally%20(RC71L)-red.svg)](https://rog.asus.com/gaming-handhelds/rog-ally/rog-ally-2023/)
 [![Kernel](https://img.shields.io/badge/Kernel-Linux%206.17.x%20(fsync)-green.svg)](https://kernel.org)
@@ -11,7 +11,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > [!IMPORTANT]
-> **AllyDock v1.1.0 Autonomous Docking & Optimization Suite**  
+> **AllyDock v1.2.0 Autonomous Docking & Optimization Suite**  
 > **AllyDock** is a comprehensive, production-tested suite of automation scripts, udev rules, `systemd` system services, sleep/wake hooks, Handheld Daemon (`hhd`) state profiles, tuned Steam Input Desktop Layout configurations, and an **intelligent display detector with 3-tier adaptive profiling (Handheld 45 FPS vs. 60Hz TV vs. AMD FreeSync/VRR Uncapped)** engineered specifically for the **ASUS ROG Ally (RC71L)** running **Bazzite OS**.  
 > The suite has been extensively battle-tested under real-world gaming conditions: it dynamically inspects connected displays via raw binary EDID and DRM sysfs interfaces, automatically selects optimal TDP and frame rate caps, resolves gamepad flapping loops, routes PipeWire audio seamlessly, and turns desktop joystick navigation into an ergonomic, responsive trackpad and turbo scroller.
 
@@ -91,16 +91,25 @@
 
 ---
 
-### 2. 🎮 Console-Style Docked Mode (External Controller Priority & Arbitration)
-- **The Problem:** When placing the ROG Ally into a docking station and connecting it to a TV along with a wireless or USB gamepad (such as an Xbox Wireless Controller or DualSense), the handheld's internal controller remained registered as the primary gamepad (`/dev/input/js0` / Player 1). Games launched from couch distance assigned the external pad to "Player 2", rendering couch gameplay impossible without tedious manual controller reordering.
-- **The AllyDock Solution:** `ally-docked-mode.sh` coordinates with udev to monitor external display and external controller attachment events:
-  - **TV Connected + External Gamepad Present:** The Ally's internal gamepad is instantaneously hidden via the HHD IPC API (`controllers.rog_ally.controller_mode.mode=hidden`), elevating the external gamepad to **Player 1**.
-  - **TV Connected without External Gamepad:** The internal gamepad remains fully active (`mode=uinput`) for comfortable handheld-style controls while playing in front of a big screen.
-  - **Handheld Mode (Undocked):** Internal controller mode is immediately restored to its default state.
+### 2. 🎮 Console-Style Docked Mode & Player 1 Slot Retention (Bluetooth Sleep/Wake Protection)
+- **The Problem:** When placing the ROG Ally into a docking station and connecting it to a TV along with a wireless Bluetooth or USB gamepad (such as GuliKit KingKong, Xbox Wireless Controller, or DualSense), the handheld's internal controller remained registered as the primary gamepad (`/dev/input/js0` / Player 1). Games launched from couch distance assigned the external pad to "Player 2", rendering single-player couch gameplay impossible. Furthermore, if an external Bluetooth gamepad fell asleep during cutscenes, legacy scripts would re-enable the internal pad, causing the external gamepad to lose Player 1 upon waking up.
+- **The AllyDock Solution:** `ally-docked-mode.sh` coordinates with udev and BlueZ to monitor external display and external controller attachment events:
+  - **TV Connected (Docked):** The internal gamepad is unconditionally hidden via the HHD IPC API (`controllers.rog_ally.controller_mode.mode=hidden`). This guarantees that external Bluetooth/USB gamepads have permanent, exclusive ownership of **Player 1**, even after repeated sleep/wake power cycles.
+  - **Bluetooth BlueZ Integration:** Direct query via `bluetoothctl devices Connected` prevents race conditions during Bluetooth reconnections.
+  - **Handheld Mode (Undocked):** Internal controller mode is immediately restored to its default state (`mode=uinput`).
 
 ---
 
-### 3. 🛡️ Controller Flapping Fix (Loop Elimination)
+### 3. 🛡️ Steam Idle & Screensaver Guard (Method 2 Keepalive)
+- **The Problem:** In Docked mode, when the external gamepad (e.g. GuliKit) powers down to save battery while watching a dialogue, reading, or paused in a single-player game (*The Last Campfire*, RPGs, etc.), and the built-in controller is hidden, the system input bus has 0 active gamepads. Steam's Big Picture / GamepadUI detects absolute inactivity and pops up the fullscreen screensaver (`Screensaver_uid2`) after 300 seconds (5 minutes), obscuring the game and halting background subtitle/translation scanners.
+- **The AllyDock Solution:** `ally-keepalive.py` daemon managed automatically by `ally-keepalive.service`:
+  - **Non-Gamepad Dummy Evdev Node:** Creates a virtual dummy node via `/dev/uinput` (`EV_KEY: KEY_RESERVED`). Because it carries NO joystick buttons or axes, it never registers as `/dev/input/js*` and strictly consumes ZERO gamepad slots, keeping Slot 1 100% reserved for external controllers.
+  - **Dual Activity Heartbeat:** Every 90 seconds, emits a micro-sync on the evdev node and triggers `org.freedesktop.ScreenSaver.SimulateUserActivity` via user D-Bus. This keeps Steam's 300-second idle timer continuously refreshed without disturbing the running game.
+  - **Automatic Life-Cycle:** Automatically started upon entering `docked_tv_60` or `docked_amd_vrr`, and stopped upon switching back to `handheld`. Zero CPU overhead (<0.001%).
+
+---
+
+### 4. 🛡️ Controller Flapping Fix (Loop Elimination)
 - **The Problem (Why controllers were disconnecting and cycling):**
   1. Legacy community scripts attempted to disable the built-in controller by physically unbinding the kernel USB device: `echo 1-2:1.0 > /sys/bus/usb/drivers/xpad/unbind`. This forcibly invalidated file descriptors inside Gamescope (`Failed to open device /dev/input/event17`) and flooded kernel logs with URB transfer errors (`unable to receive magic message: -32`).
   2. HHD emulates an `Xbox Elite` controller to expose the rear macro paddles (M1/M2) to Steam Input. Outdated scripts mistakenly identified this **virtual Xbox Elite device as a physical external gamepad**!

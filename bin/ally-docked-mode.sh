@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# AllyDock Docked Mode, Display Detector & 3-Tier Adaptive Profiler (v1.1.0)
+# AllyDock Docked Mode, Display Detector & 3-Tier Adaptive Profiler (v1.2.0)
 # Supports Handheld 45 FPS vs Docked 60Hz TV vs Docked AMD FreeSync/VRR Uncapped Gaming.
+# Features Console-Style External Gamepad Slot Protection & Steam Idle/Screensaver Guard.
 # Event-driven: Triggered by udev (display/gamepad connection) or resume hook.
 # Zero idle CPU consumption, no background while-loop.
 
@@ -13,6 +14,7 @@ PROFILE_STATE_FILE="/var/home/V/.local/share/ally-profile.state"
 DISPLAY_STATE_FILE="/var/home/V/.local/share/ally-display.state"
 LOCK_FILE="/var/home/V/.local/share/ally-docked.lock"
 MANGOHUD_CONF="/var/home/V/.config/MangoHud/MangoHud.conf"
+KEEPALIVE_SERVICE="ally-keepalive.service"
 
 mkdir -p "$(dirname "$LOG_FILE")"
 
@@ -117,6 +119,13 @@ is_external_display_connected() {
 }
 
 is_external_controller_connected() {
+    # 1. Швидка перевірка підключених Bluetooth геймпадів через BlueZ
+    if command -v bluetoothctl >/dev/null 2>&1; then
+        if bluetoothctl devices Connected 2>/dev/null | grep -i -E "controller|gamepad|gulikit|xbox|dualshock|dualsense" >/dev/null 2>&1; then
+            return 0
+        fi
+    fi
+
     local ext_found=0
     for js in /dev/input/js*; do
         [ -e "$js" ] || continue
@@ -297,6 +306,42 @@ disable_internal_controller() {
     fi
 }
 
+start_idle_guard() {
+    local cur_status="inactive"
+    if [ "$(id -u)" -eq 0 ]; then
+        cur_status=$(sudo -u V env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus systemctl --user is-active "$KEEPALIVE_SERVICE" 2>/dev/null || echo "inactive")
+        if [ "$cur_status" != "active" ]; then
+            log "DOCKED: Активація захисту від заставки Steam (AllyDock Idle Guard)..."
+            sudo -u V env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus \
+                systemctl --user start "$KEEPALIVE_SERVICE" 2>/dev/null || true
+        fi
+    else
+        cur_status=$(systemctl --user is-active "$KEEPALIVE_SERVICE" 2>/dev/null || echo "inactive")
+        if [ "$cur_status" != "active" ]; then
+            log "DOCKED: Активація захисту від заставки Steam (AllyDock Idle Guard)..."
+            systemctl --user start "$KEEPALIVE_SERVICE" 2>/dev/null || true
+        fi
+    fi
+}
+
+stop_idle_guard() {
+    local cur_status="inactive"
+    if [ "$(id -u)" -eq 0 ]; then
+        cur_status=$(sudo -u V env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus systemctl --user is-active "$KEEPALIVE_SERVICE" 2>/dev/null || echo "inactive")
+        if [ "$cur_status" = "active" ]; then
+            log "HANDHELD: Деактивація захисту від заставки Steam..."
+            sudo -u V env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus \
+                systemctl --user stop "$KEEPALIVE_SERVICE" 2>/dev/null || true
+        fi
+    else
+        cur_status=$(systemctl --user is-active "$KEEPALIVE_SERVICE" 2>/dev/null || echo "inactive")
+        if [ "$cur_status" = "active" ]; then
+            log "HANDHELD: Деактивація захисту від заставки Steam..."
+            systemctl --user stop "$KEEPALIVE_SERVICE" 2>/dev/null || true
+        fi
+    fi
+}
+
 apply_profile() {
     local target_profile="$1"
     local disp_name="${2:-Internal eDP}"
@@ -319,6 +364,7 @@ apply_profile() {
             set_fps_target "45"
             set_audio_sink "speaker"
             enable_internal_controller
+            stop_idle_guard
             ;;
         docked_tv_60)
             log ">>> Профіль [DOCKED TV 60Hz]: Performance 25W TDP, EPP balance_performance, 60 FPS Fixed Lock, HDMI Audio"
@@ -327,11 +373,10 @@ apply_profile() {
             set_gpu_dpm "auto"
             set_fps_target "60"
             set_audio_sink "hdmi"
-            if [ "$ext_ctrl" -eq 1 ]; then
-                disable_internal_controller
-            else
-                enable_internal_controller
-            fi
+            # У режимі ТВ вбудований контролер завжди приховується, щоб зовнішній геймпад (BT або USB)
+            # гарантовано володів слотом Гравця 1 і не втрачав керування при засинанні та пробудженні
+            disable_internal_controller
+            start_idle_guard
             ;;
         docked_amd_vrr)
             log ">>> Профіль [DOCKED AMD VRR]: Turbo 30W Performance TDP, EPP performance, GPU DPM high, Uncapped (0 FPS), HDMI Audio"
@@ -340,11 +385,9 @@ apply_profile() {
             set_gpu_dpm "high"
             set_fps_target "0"
             set_audio_sink "hdmi"
-            if [ "$ext_ctrl" -eq 1 ]; then
-                disable_internal_controller
-            else
-                enable_internal_controller
-            fi
+            # У режимі VRR дисплея вбудований контролер також приховується для безшовного керування
+            disable_internal_controller
+            start_idle_guard
             ;;
         *)
             log "УВАГА: Невідомий профіль '$target_profile', відкат до handheld"
@@ -412,8 +455,15 @@ case "${1:-check}" in
         cur_epp=$(cat /sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference 2>/dev/null || cat /sys/devices/system/cpu/cpufreq/policy0/energy_performance_preference 2>/dev/null || cat /sys/devices/system/cpu/cpu0/power/energy_performance_preference 2>/dev/null || echo "N/A")
         cur_dpm=$(cat /sys/class/drm/card0/device/power_dpm_force_performance_level 2>/dev/null || cat /sys/class/drm/card1/device/power_dpm_force_performance_level 2>/dev/null || echo "N/A")
 
+        guard_status="inactive"
+        if [ "$(id -u)" -eq 0 ]; then
+            guard_status=$(sudo -u V env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus systemctl --user is-active "$KEEPALIVE_SERVICE" 2>/dev/null || echo "inactive")
+        else
+            guard_status=$(systemctl --user is-active "$KEEPALIVE_SERVICE" 2>/dev/null || echo "inactive")
+        fi
+
         echo "======================================================================"
-        echo "       ⚓ AllyDock Suite v1.1.0 — Status & Adaptive Profiling"
+        echo "       ⚓ AllyDock Suite v1.2.0 — Status & Adaptive Profiling"
         echo "======================================================================"
         echo " [Display Detection]"
         echo "   Status:           ${STATUS^^}"
@@ -445,6 +495,7 @@ case "${1:-check}" in
         echo " [Controllers (Console-Style Mode)]"
         echo "   External Gamepad: $(is_external_controller_connected && echo 'YES (Connected)' || echo 'NO (None)')"
         echo "   Internal Gamepad: $cur_ctrl"
+        echo "   Steam Idle Guard: ${guard_status^^}"
         if command -v hhdctl >/dev/null 2>&1; then
             echo "   HHD Mode:         $(sudo hhdctl get controllers.rog_ally.controller_mode.mode 2>/dev/null || echo 'N/A')"
             echo "   HHD Paddles As:   $(sudo hhdctl get controllers.rog_ally.controller_mode.uinput.paddles_as 2>/dev/null || echo 'N/A')"
@@ -477,6 +528,12 @@ case "${1:-check}" in
     disable)
         disable_internal_controller
         ;;
+    keepalive-start|idle-guard-start)
+        start_idle_guard
+        ;;
+    keepalive-stop|idle-guard-stop)
+        stop_idle_guard
+        ;;
     tdp-performance)
         set_power_profile "performance"
         ;;
@@ -502,7 +559,7 @@ case "${1:-check}" in
         [ -f "$LOG_FILE" ] && tail -n 35 "$LOG_FILE" || echo "Лог порожній."
         ;;
     *)
-        echo "Використання: $0 {check|status|detect|handheld|docked-tv|docked-vrr|enable|disable|tdp-performance|tdp-balanced|fps-45|fps-60|fps-uncapped|audio-hdmi|audio-speaker|log}"
+        echo "Використання: $0 {check|status|detect|handheld|docked-tv|docked-vrr|enable|disable|keepalive-start|keepalive-stop|tdp-performance|tdp-balanced|fps-45|fps-60|fps-uncapped|audio-hdmi|audio-speaker|log}"
         exit 1
         ;;
 esac

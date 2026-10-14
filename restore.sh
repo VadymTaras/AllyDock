@@ -7,7 +7,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-VERSION=$(cat VERSION 2>/dev/null || echo "1.1.0")
+VERSION=$(cat VERSION 2>/dev/null || echo "1.2.0")
 echo "===================================================="
 echo "       ⚓ AllyDock Suite for Bazzite OS v$VERSION"
 echo "===================================================="
@@ -25,6 +25,7 @@ mkdir -p "$USER_HOME/.local/bin"
 cp -f bin/ally-docked-mode.sh "$USER_HOME/.local/bin/"
 cp -f bin/ally-detect-display.py "$USER_HOME/.local/bin/"
 cp -f bin/hhd-watchdog.sh "$USER_HOME/.local/bin/"
+cp -f bin/ally-keepalive.py "$USER_HOME/.local/bin/"
 chmod +x "$USER_HOME/.local/bin/"*.sh "$USER_HOME/.local/bin/"*.py
 chown -R "$TARGET_USER:$TARGET_USER" "$USER_HOME/.local/bin"
 
@@ -37,8 +38,16 @@ echo "[+] Відновлення systemd служб та таймерів..."
 cp -f systemd/ally-docked.service /etc/systemd/system/
 cp -f systemd/hhd-watchdog.service /etc/systemd/system/
 cp -f systemd/hhd-watchdog.timer /etc/systemd/system/
+mkdir -p /etc/systemd/user
+cp -f systemd/ally-keepalive.service /etc/systemd/user/
 systemctl daemon-reload
 systemctl enable --now hhd-watchdog.timer
+
+# Також копіюємо у профіль користувача
+mkdir -p "$USER_HOME/.config/systemd/user"
+cp -f systemd/ally-keepalive.service "$USER_HOME/.config/systemd/user/"
+chown -R "$TARGET_USER:$TARGET_USER" "$USER_HOME/.config/systemd"
+sudo -u "$TARGET_USER" env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus systemctl --user daemon-reload 2>/dev/null || true
 
 echo "[+] Відновлення sleep хука..."
 mkdir -p /etc/systemd/system-sleep
