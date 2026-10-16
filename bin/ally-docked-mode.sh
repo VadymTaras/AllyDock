@@ -360,13 +360,18 @@ apply_profile() {
 
     case "$target_profile" in
         handheld)
-            log ">>> Профіль [HANDHELD]: Balanced 15-20W TDP, EPP balance_power, 45 FPS Cap, DSP Speakers, Internal Gamepad"
+            log ">>> Профіль [HANDHELD]: Balanced 15-20W TDP, EPP balance_power, 45 FPS Cap, DSP Speakers"
             set_power_profile "balanced"
             set_cpu_epp "balance_power"
             set_gpu_dpm "auto"
             set_fps_target "45"
             set_audio_sink "speaker"
-            enable_internal_controller
+            if [ "$ext_ctrl" -eq 1 ]; then
+                log "HANDHELD (зовнішній геймпад): Підключено зовнішній контролер -> приховування вбудованого контролера від паразитної вібрації."
+                disable_internal_controller
+            else
+                enable_internal_controller
+            fi
             stop_idle_guard
             ;;
         docked_tv_60)
