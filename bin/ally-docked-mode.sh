@@ -283,8 +283,9 @@ enable_internal_controller() {
     [ -f "$CTRL_STATE_FILE" ] && cur_state=$(cat "$CTRL_STATE_FILE")
     if [ "$cur_state" != "enabled" ]; then
         log "UNDOCKED / STANDALONE: Відновлення вбудованого контролера..."
-        # Restore HHD mode to uinput cleanly (DO NOT touch raw USB / xpad unbind!)
-        if command -v hhdctl >/dev/null 2>&1; then
+        if command -v inputplumber >/dev/null 2>&1; then
+            inputplumber device 0 targets set deck-uhid keyboard mouse 2>/dev/null || true
+        elif command -v hhdctl >/dev/null 2>&1; then
             sudo hhdctl set controllers.rog_ally.controller_mode.mode=uinput 2>/dev/null || true
         fi
         echo "enabled" > "$CTRL_STATE_FILE"
@@ -296,13 +297,14 @@ disable_internal_controller() {
     local cur_state=""
     [ -f "$CTRL_STATE_FILE" ] && cur_state=$(cat "$CTRL_STATE_FILE")
     if [ "$cur_state" != "docked_disabled" ]; then
-        log "DOCKED (ТВ + зовнішній геймпад): Приховування вбудованого контролера..."
-        # Set HHD controller mode to hidden cleanly (DO NOT touch raw USB / xpad unbind!)
-        if command -v hhdctl >/dev/null 2>&1; then
+        log "DOCKED / BT GAMEPAD: Приховування вбудованого контролера від паразитної вібрації..."
+        if command -v inputplumber >/dev/null 2>&1; then
+            inputplumber device 0 targets set keyboard mouse 2>/dev/null || true
+        elif command -v hhdctl >/dev/null 2>&1; then
             sudo hhdctl set controllers.rog_ally.controller_mode.mode=hidden 2>/dev/null || true
         fi
         echo "docked_disabled" > "$CTRL_STATE_FILE"
-        log "Вбудований контролер приховано. Зовнішній контролер тепер Гравець 1 (TV Mode)."
+        log "Вбудований контролер приховано. Зовнішній контролер тепер Гравець 1 (блокування вібрації консолі)."
     fi
 }
 
