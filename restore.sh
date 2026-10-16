@@ -26,6 +26,7 @@ cp -f bin/ally-docked-mode.sh "$USER_HOME/.local/bin/"
 cp -f bin/ally-detect-display.py "$USER_HOME/.local/bin/"
 cp -f bin/hhd-watchdog.sh "$USER_HOME/.local/bin/"
 cp -f bin/ally-keepalive.py "$USER_HOME/.local/bin/"
+cp -f bin/ally-sync-from-server.sh "$USER_HOME/.local/bin/"
 chmod +x "$USER_HOME/.local/bin/"*.sh "$USER_HOME/.local/bin/"*.py
 chown -R "$TARGET_USER:$TARGET_USER" "$USER_HOME/.local/bin"
 

@@ -389,9 +389,13 @@ apply_profile() {
             set_gpu_dpm "auto"
             set_fps_target "60"
             set_audio_sink "hdmi"
-            # У режимі ТВ вбудований контролер завжди приховується, щоб зовнішній геймпад (BT або USB)
-            # гарантовано володів слотом Гравця 1 і не втрачав керування при засинанні та пробудженні
-            disable_internal_controller
+            if [ "$ext_ctrl" -eq 1 ]; then
+                log "DOCKED TV (зовнішній геймпад): Підключено зовнішній контролер -> приховування вбудованого контролера від паразитної вібрації."
+                disable_internal_controller
+            else
+                log "DOCKED TV (без зовнішнього геймпада): Контролер Ally використовується в руках як Гравець 1 з виведенням на ТВ."
+                enable_internal_controller
+            fi
             start_idle_guard
             ;;
         docked_amd_vrr)
@@ -401,8 +405,13 @@ apply_profile() {
             set_gpu_dpm "high"
             set_fps_target "0"
             set_audio_sink "hdmi"
-            # У режимі VRR дисплея вбудований контролер також приховується для безшовного керування
-            disable_internal_controller
+            if [ "$ext_ctrl" -eq 1 ]; then
+                log "DOCKED AMD VRR (зовнішній геймпад): Підключено зовнішній контролер -> приховування вбудованого контролера від паразитної вібрації."
+                disable_internal_controller
+            else
+                log "DOCKED AMD VRR (без зовнішнього геймпада): Контролер Ally використовується в руках як Гравець 1 з виведенням на ТВ."
+                enable_internal_controller
+            fi
             start_idle_guard
             ;;
         *)
