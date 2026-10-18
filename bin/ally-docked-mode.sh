@@ -300,17 +300,13 @@ disable_internal_controller() {
     local cur_state=""
     [ -f "$CTRL_STATE_FILE" ] && cur_state=$(cat "$CTRL_STATE_FILE")
     if [ "$cur_state" != "docked_disabled" ]; then
-        log "DOCKED / BT GAMEPAD: Приховування вбудованого контролера від паразитної вібрації..."
-        if [ -e /sys/bus/usb/drivers/xpad/1-2:1.0 ]; then
-            sudo sh -c 'echo 1-2:1.0 > /sys/bus/usb/drivers/xpad/unbind' 2>/dev/null || true
-        fi
+        log "DOCKED / BT GAMEPAD: Зовнішній геймпад підключено. Вбудований контролер залишається активним як резервний/гравець."
+        # Не ламаємо XInput і не прибираємо deck-uhid, щоб кнопки завжди працювали
         if command -v inputplumber >/dev/null 2>&1; then
-            inputplumber device 0 targets set keyboard mouse 2>/dev/null || true
-        elif command -v hhdctl >/dev/null 2>&1; then
-            sudo hhdctl set controllers.rog_ally.controller_mode.mode=hidden 2>/dev/null || true
+            inputplumber device 0 targets set deck-uhid keyboard mouse 2>/dev/null || true
         fi
-        echo "docked_disabled" > "$CTRL_STATE_FILE"
-        log "Вбудований контролер приховано. Зовнішній контролер тепер Гравець 1 (блокування вібрації консолі)."
+        echo "docked_with_external" > "$CTRL_STATE_FILE"
+        log "Вбудований контролер та зовнішній геймпад синхронізовано."
     fi
 }
 

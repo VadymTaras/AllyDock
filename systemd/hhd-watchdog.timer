@@ -1,10 +1,10 @@
 [Unit]
-Description=Lightweight HHD Periodic Watchdog Timer
+Description=Lightweight Gamepad / InputPlumber Watchdog Timer
 
 [Timer]
-OnBootSec=3min
-OnUnitActiveSec=15min
-AccuracySec=5min
+OnBootSec=1min
+OnUnitActiveSec=15s
+AccuracySec=2s
 Persistent=false
 
 [Install]
