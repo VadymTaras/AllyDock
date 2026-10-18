@@ -288,6 +288,7 @@ enable_internal_controller() {
         fi
         if command -v inputplumber >/dev/null 2>&1; then
             inputplumber device 0 targets set deck-uhid keyboard mouse 2>/dev/null || true
+            inputplumber device 0 intercept set pass 2>/dev/null || true
         elif command -v hhdctl >/dev/null 2>&1; then
             sudo hhdctl set controllers.rog_ally.controller_mode.mode=uinput 2>/dev/null || true
         fi
@@ -300,13 +301,16 @@ disable_internal_controller() {
     local cur_state=""
     [ -f "$CTRL_STATE_FILE" ] && cur_state=$(cat "$CTRL_STATE_FILE")
     if [ "$cur_state" != "docked_disabled" ]; then
-        log "DOCKED / BT GAMEPAD: Зовнішній геймпад підключено. Вбудований контролер залишається активним як резервний/гравець."
-        # Не ламаємо XInput і не прибираємо deck-uhid, щоб кнопки завжди працювали
+        log "DOCKED / BT GAMEPAD: Зовнішній геймпад підключено. Перехоплюємо вбудований контролер (Гравець 1 -> Bluetooth геймпад)."
+        # Використовуємо нативний механізм перехоплення InputPlumber замість грубого unbind USB:
+        # це глушить вібрацію та кнопки вбудованої консолі, не ламаючи віртуальний пристрій і не чіпаючи Bluetooth контролер!
         if command -v inputplumber >/dev/null 2>&1; then
-            inputplumber device 0 targets set deck-uhid keyboard mouse 2>/dev/null || true
+            inputplumber device 0 intercept set gamepad-only 2>/dev/null || true
+        elif command -v hhdctl >/dev/null 2>&1; then
+            sudo hhdctl set controllers.rog_ally.controller_mode.mode=hidden 2>/dev/null || true
         fi
-        echo "docked_with_external" > "$CTRL_STATE_FILE"
-        log "Вбудований контролер та зовнішній геймпад синхронізовано."
+        echo "docked_disabled" > "$CTRL_STATE_FILE"
+        log "Вбудований контролер перехоплено. Зовнішній Bluetooth контролер тепер Гравець 1 (без паразитної вібрації)."
     fi
 }
 
