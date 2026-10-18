@@ -292,6 +292,9 @@ enable_internal_controller() {
         elif command -v hhdctl >/dev/null 2>&1; then
             sudo hhdctl set controllers.rog_ally.controller_mode.mode=uinput 2>/dev/null || true
         fi
+        if command -v busctl >/dev/null 2>&1; then
+            busctl set-property org.shadowblip.InputPlumber /org/shadowblip/InputPlumber/CompositeDevice0 org.shadowblip.Output.ForceFeedback Enabled b true 2>/dev/null || true
+        fi
         echo "enabled" > "$CTRL_STATE_FILE"
         log "Вбудований контролер відновлено (Handheld Mode)."
     fi
@@ -308,6 +311,10 @@ disable_internal_controller() {
             inputplumber device 0 intercept set gamepad-only 2>/dev/null || true
         elif command -v hhdctl >/dev/null 2>&1; then
             sudo hhdctl set controllers.rog_ally.controller_mode.mode=hidden 2>/dev/null || true
+        fi
+        if command -v busctl >/dev/null 2>&1; then
+            busctl call org.shadowblip.InputPlumber /org/shadowblip/InputPlumber/CompositeDevice0 org.shadowblip.Output.ForceFeedback Stop 2>/dev/null || true
+            busctl set-property org.shadowblip.InputPlumber /org/shadowblip/InputPlumber/CompositeDevice0 org.shadowblip.Output.ForceFeedback Enabled b false 2>/dev/null || true
         fi
         echo "docked_disabled" > "$CTRL_STATE_FILE"
         log "Вбудований контролер перехоплено. Зовнішній Bluetooth контролер тепер Гравець 1 (без паразитної вібрації)."
