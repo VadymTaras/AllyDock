@@ -282,21 +282,33 @@ enable_internal_controller() {
     local cur_state=""
     [ -f "$CTRL_STATE_FILE" ] && cur_state=$(cat "$CTRL_STATE_FILE")
     if [ "$cur_state" != "enabled" ]; then
-        log "UNDOCKED / STANDALONE: Відновлення вбудованого контролера..."
+        log "UNDOCKED / STANDALONE: Відновлення вбудованого контролера у Слот 0 (Гравець 1)..."
         if [ ! -e /sys/bus/usb/drivers/xpad/1-2:1.0 ] && [ -d /sys/bus/usb/drivers/xpad ]; then
             sudo sh -c 'echo 1-2:1.0 > /sys/bus/usb/drivers/xpad/bind' 2>/dev/null || true
         fi
+        if command -v busctl >/dev/null 2>&1; then
+            # Відновлюємо ціль gamepad в InputPlumber для вбудованої консолі
+            local gp_target="/org/shadowblip/InputPlumber/devices/target/gamepad1"
+            if ! busctl introspect org.shadowblip.InputPlumber "$gp_target" >/dev/null 2>&1; then
+                gp_target="/org/shadowblip/InputPlumber/devices/target/gamepad0"
+            fi
+            busctl call org.shadowblip.InputPlumber /org/shadowblip/InputPlumber/CompositeDevice0 \
+                org.shadowblip.Input.CompositeDevice SetTargetDevices as 3 \
+                "/org/shadowblip/InputPlumber/devices/target/keyboard0" \
+                "$gp_target" \
+                "/org/shadowblip/InputPlumber/devices/target/mouse0" 2>/dev/null || true
+            busctl set-property org.shadowblip.InputPlumber /org/shadowblip/InputPlumber/CompositeDevice0 \
+                org.shadowblip.Input.CompositeDevice InterceptMode u 0 2>/dev/null || true
+            busctl set-property org.shadowblip.InputPlumber /org/shadowblip/InputPlumber/CompositeDevice0 \
+                org.shadowblip.Output.ForceFeedback Enabled b true 2>/dev/null || true
+        fi
         if command -v inputplumber >/dev/null 2>&1; then
-            inputplumber device 0 targets set deck-uhid keyboard mouse 2>/dev/null || true
             inputplumber device 0 intercept set pass 2>/dev/null || true
         elif command -v hhdctl >/dev/null 2>&1; then
             sudo hhdctl set controllers.rog_ally.controller_mode.mode=uinput 2>/dev/null || true
         fi
-        if command -v busctl >/dev/null 2>&1; then
-            busctl set-property org.shadowblip.InputPlumber /org/shadowblip/InputPlumber/CompositeDevice0 org.shadowblip.Output.ForceFeedback Enabled b true 2>/dev/null || true
-        fi
         echo "enabled" > "$CTRL_STATE_FILE"
-        log "Вбудований контролер відновлено (Handheld Mode)."
+        log "Вбудований контролер відновлено (Гравець 1, Handheld Mode із рідною вібрацією)."
     fi
 }
 
@@ -304,20 +316,30 @@ disable_internal_controller() {
     local cur_state=""
     [ -f "$CTRL_STATE_FILE" ] && cur_state=$(cat "$CTRL_STATE_FILE")
     if [ "$cur_state" != "docked_disabled" ]; then
-        log "DOCKED / BT GAMEPAD: Зовнішній геймпад підключено. Перехоплюємо вбудований контролер (Гравець 1 -> Bluetooth геймпад)."
-        # Використовуємо нативний механізм перехоплення InputPlumber замість грубого unbind USB:
-        # це глушить вібрацію та кнопки вбудованої консолі, не ламаючи віртуальний пристрій і не чіпаючи Bluetooth контролер!
+        log "DOCKED / BT GAMEPAD: Зовнішній геймпад підключено. Full Player 1 Swap: перепризначення слотів для Bluetooth контролера."
+        # 1. Зупиняємо та вимикаємо ForceFeedback на вбудованих моторах Ally:
+        if command -v busctl >/dev/null 2>&1; then
+            busctl call org.shadowblip.InputPlumber /org/shadowblip/InputPlumber/CompositeDevice0 \
+                org.shadowblip.Output.ForceFeedback Stop 2>/dev/null || true
+            busctl set-property org.shadowblip.InputPlumber /org/shadowblip/InputPlumber/CompositeDevice0 \
+                org.shadowblip.Output.ForceFeedback Enabled b false 2>/dev/null || true
+
+            # 2. Вивільняємо Слот 0 (Player 1) для Bluetooth-геймпада: знімаємо емульований gamepad target з CompositeDevice0
+            # Залишаємо виключно keyboard/mouse для системних гарячих клавіш Armoury Crate / QAM
+            busctl call org.shadowblip.InputPlumber /org/shadowblip/InputPlumber/CompositeDevice0 \
+                org.shadowblip.Input.CompositeDevice SetTargetDevices as 2 \
+                "/org/shadowblip/InputPlumber/devices/target/keyboard0" \
+                "/org/shadowblip/InputPlumber/devices/target/mouse0" 2>/dev/null || true
+            busctl set-property org.shadowblip.InputPlumber /org/shadowblip/InputPlumber/CompositeDevice0 \
+                org.shadowblip.Input.CompositeDevice InterceptMode u 1 2>/dev/null || true
+        fi
         if command -v inputplumber >/dev/null 2>&1; then
             inputplumber device 0 intercept set gamepad-only 2>/dev/null || true
         elif command -v hhdctl >/dev/null 2>&1; then
             sudo hhdctl set controllers.rog_ally.controller_mode.mode=hidden 2>/dev/null || true
         fi
-        if command -v busctl >/dev/null 2>&1; then
-            busctl call org.shadowblip.InputPlumber /org/shadowblip/InputPlumber/CompositeDevice0 org.shadowblip.Output.ForceFeedback Stop 2>/dev/null || true
-            busctl set-property org.shadowblip.InputPlumber /org/shadowblip/InputPlumber/CompositeDevice0 org.shadowblip.Output.ForceFeedback Enabled b false 2>/dev/null || true
-        fi
         echo "docked_disabled" > "$CTRL_STATE_FILE"
-        log "Вбудований контролер перехоплено. Зовнішній Bluetooth контролер тепер Гравець 1 (без паразитної вібрації)."
+        log "Player 1 Swap успішно виконано. Зовнішній Bluetooth геймпад зайняв Слот 0 (пряма вібрація гри в руках)."
     fi
 }
 
