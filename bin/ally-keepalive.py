@@ -182,17 +182,43 @@ class InputActivityMonitor:
 
 
 def is_maintenance_active() -> bool:
-    """Checks if active SSH sessions or developer maintenance is running."""
+    """Checks if active interactive SSH sessions (with terminal pts/) or development is running.
+
+    Non-interactive background SSH commands (like automated hourly scanners) do NOT block sleep.
+    """
     try:
+        res = subprocess.run(["who"], capture_output=True, text=True, timeout=1)
+        if res.returncode == 0:
+            for line in res.stdout.splitlines():
+                if "pts/" in line:
+                    return True
+    except Exception:
+        pass
+    return False
+
+
+def is_game_running() -> bool:
+    """Checks if an actual game (Proton/Wine/emulator or non-menu Steam AppID) is currently running.
+
+    When in Steam Deck menus or homescreen, keepalive sleeps to allow natural Steam power-saving.
+    """
+    try:
+        # 1. Check gamescope focused app
+        for path in ("/tmp/gamescope_focused_app", "/run/user/1000/gamescope_focused_app"):
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    app_id_str = f.read().strip()
+                if app_id_str.isdigit() and int(app_id_str) > 769:
+                    return True
+
+        # 2. Check for active game engines (wine, proton, emulators, native games)
         res = subprocess.run(
-            ["ss", "-t", "state", "established", "sport = :22"],
+            ["pgrep", "-f", "wineserver|pressure-vessel|rpcs3|yuzu|ryujinx|ppsspp|pcsx2"],
             capture_output=True,
-            text=True,
             timeout=1,
         )
-        if res.returncode == 0:
-            lines = [l for l in res.stdout.strip().splitlines() if ":" in l and not l.startswith("Recv-Q")]
-            return len(lines) > 0
+        if res.returncode == 0 and res.stdout.strip():
+            return True
     except Exception:
         pass
     return False
@@ -271,6 +297,11 @@ def main():
                 break
 
             now = time.monotonic()
+
+            # Якщо гри немає і немає активного терміналу розробника — не втручаємося в сон Steam!
+            if not is_game_running() and not is_maintenance_active():
+                time.sleep(1.0)
+                continue
 
             if activity:
                 last_real_input = now
