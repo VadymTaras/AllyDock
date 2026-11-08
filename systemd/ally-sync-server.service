@@ -1,0 +1,10 @@
+[Unit]
+Description=Pull Updates from Server on Wake / Network Online
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/var/home/V/.local/bin/ally-sync-from-server.sh
+StandardOutput=journal
+StandardError=journal

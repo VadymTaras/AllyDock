@@ -1,9 +1,9 @@
-# ⚓ AllyDock (v1.2.0) - Autonomous Docking & System Optimization Suite for ASUS ROG Ally on Bazzite OS
+# ⚓ AllyDock (v1.2.1) - Autonomous Docking & System Optimization Suite for ASUS ROG Ally on Bazzite OS
 ### Intelligent Display Detection, 3-Tier Adaptive Profiling & Seamless Docked Gaming Suite
 
 [![Project](https://img.shields.io/badge/Project-AllyDock-orange.svg)](#)
-[![Version](https://img.shields.io/badge/Version-v1.2.0-blue.svg)](VERSION)
-[![OS](https://img.shields.io/badge/OS-Bazzite%2043%20%7C%2044-purple.svg)](https://bazzite.gg)
+[![Version](https://img.shields.io/badge/Version-v1.2.1-blue.svg)](VERSION)
+[![OS](https://img.shields.io/badge/OS-Bazzite%2043%20%7C%2044%20%7C%2045-purple.svg)](https://bazzite.gg)
 [![Hardware](https://img.shields.io/badge/Hardware-ASUS%20ROG%20Ally%20(RC71L)-red.svg)](https://rog.asus.com/gaming-handhelds/rog-ally/rog-ally-2023/)
 [![Kernel](https://img.shields.io/badge/Kernel-Linux%206.17.x%20(fsync)-green.svg)](https://kernel.org)
 [![Status](https://img.shields.io/badge/Status-Tested%20%26%20Verified-success.svg)](#-tested-environment--compatibility-matrix)
@@ -32,11 +32,11 @@
 | Component / Subsystem | Version / Configuration | Technical Notes |
 | :--- | :--- | :--- |
 | **Hardware Platform** | **ASUS ROG Ally (RC71L.319)** | AMD Ryzen Z1 Extreme, 16GB LPDDR5, 120Hz FreeSync Premium |
-| **Operating System** | **Bazzite 43 / 44 (Kinoite)** | Linux Kernel `6.17.x-ba29.fc43.x86_64` (fsync kernel) |
+| **Operating System** | **Bazzite 43 / 44 / 45 (Kinoite)** | Linux Kernel `6.17.x`–`6.18.x` (fsync kernel) |
 | **Desktop Environment** | **KDE Plasma 6 (Wayland)** | Gamescope Session in Game Mode, SDDM passwordless autologin |
 | **Display Detection** | **`bin/ally-detect-display.py`** | Pure Python 3: raw binary EDID parsing (CEA-861, DisplayID, AMD FreeSync OUI `0x00001a`, HDMI Forum VRR OUI `0xc45dd8`, VESA checksum) |
 | **Adaptive Profiler** | **`bin/ally-docked-mode.sh`** | 3 Tiers: Handheld (45 FPS / 15W), TV 60Hz (60 FPS / 25W), AMD VRR (0 Uncapped / 30W Turbo) |
-| **Gamepad Daemon** | **Handheld Daemon (`hhd`)** | Version `2888122e` (v2.88+), verified compatible with Bazzite 44 `inputplumber` |
+| **Gamepad Daemon** | **InputPlumber / HHD** | InputPlumber v0.83+ (Bazzite 45 default) / HHD v2.88+, flapping loop prevention |
 | **Decky Loader** | **v3.2.9** (`plugin_loader.service`) | Fully verified with `decky-lsfg-vk`, `CssLoader`, `Junk-Store`, `Bazzite Buddy` |
 | **Proton Runner** | **`GE-Proton11-7`** | Set environment variable: `PROTON_FSR4_RDNA3_UPGRADE=1` |
 | **Audio Server (Sound)** | **PipeWire + WirePlumber** | Calibrated speaker DSP filter + Valve HRTF 7.1 spatializer (`sadie_d1.sofa`) |

@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodic Check for Server Updates
+After=network-online.target
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
