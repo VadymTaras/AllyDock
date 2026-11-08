@@ -915,10 +915,11 @@
 		"settings"
 		{
 			"output_joystick"		"2"
-			"sensitivity"		"100"
-			"mouse_smoothing"		"1"
-			"response_curve"		"0"
-			"deadzone_inner_radius"		"2000"
+			"sensitivity"		"85"
+			"mouse_smoothing"		"2"
+			"response_curve"		"1"
+			"deadzone_inner_radius"		"800"
+			"min_movement"		"1"
 		}
 	}
 	"group"
