@@ -1,1 +1,0 @@
-ACTION=="add|remove", SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_JOYSTICK}=="1", RUN+="/usr/bin/systemctl start --no-block hhd-watchdog.service"

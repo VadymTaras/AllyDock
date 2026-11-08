@@ -40,12 +40,12 @@ check_hhd() {
     local internal_controller_ok=1
 
     if [ "$daemon" = "inputplumber.service" ]; then
-        # InputPlumber must have ASUS ROG Ally in its composite devices order
-        if ! inputplumber devices order 2>/dev/null | grep -q "ASUS ROG Ally"; then
+        # InputPlumber must have ASUS ROG Ally in its composite devices list
+        if ! inputplumber devices list 2>/dev/null | grep -q "ASUS ROG Ally"; then
             internal_controller_ok=0
         fi
-        # And the emulated Xbox pad for internal controller must be present in kernel input
-        if ! grep -q 'Name="Microsoft X-Box 360 pad 0"' /proc/bus/input/devices 2>/dev/null; then
+        # And joystick node must be present
+        if ! ls /dev/input/js* 1>/dev/null 2>&1; then
             internal_controller_ok=0
         fi
     else
@@ -68,7 +68,7 @@ check_hhd() {
     sleep 2
 
     if [ "$daemon" = "inputplumber.service" ]; then
-        if inputplumber devices order 2>/dev/null | grep -q "ASUS ROG Ally"; then
+        if inputplumber devices list 2>/dev/null | grep -q "ASUS ROG Ally" && ls /dev/input/js* 1>/dev/null 2>&1; then
             log "RECOVERED: InputPlumber успішно відновив вбудований геймпад ROG Ally."
             return 0
         fi
