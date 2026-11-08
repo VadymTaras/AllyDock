@@ -915,10 +915,10 @@
 		"settings"
 		{
 			"output_joystick"		"2"
-			"sensitivity"		"130"
+			"sensitivity"		"100"
 			"mouse_smoothing"		"1"
-			"response_curve"		"2"
-			"deadzone_inner_radius"		"6000"
+			"response_curve"		"0"
+			"deadzone_inner_radius"		"2000"
 		}
 	}
 	"group"
@@ -1001,6 +1001,12 @@
 						{
 							"binding"		"mouse_wheel SCROLL_UP"
 						}
+						"settings"
+						{
+							"hold_repeats"		"1"
+							"repeat_rate"		"25"
+							"repeat_delay"		"180"
+						}
 					}
 				}
 				"disabled_activators"
@@ -1016,6 +1022,12 @@
 						"bindings"
 						{
 							"binding"		"mouse_wheel SCROLL_DOWN"
+						}
+						"settings"
+						{
+							"hold_repeats"		"1"
+							"repeat_rate"		"25"
+							"repeat_delay"		"180"
 						}
 					}
 				}
